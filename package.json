@@ -1,0 +1,36 @@
+{
+  "name": "tabbit",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p .",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "dependencies": {
+    "cookie-session": "^2.1.1",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "googleapis": "^160.0.0",
+    "node-fetch": "^2.7.0",
+    "openid-client": "^6.8.1",
+    "passport": "^0.7.0",
+    "passport-spotify": "^2.0.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/cookie-session": "^2.0.49",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.6.0",
+    "@types/passport": "^1.0.17",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  }
+}
