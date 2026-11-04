@@ -22,6 +22,12 @@ test("invalid PORT is rejected", () => {
 	assert.equal(EnvSchema.safeParse({ ...base, PORT: "abc" }).success, false);
 });
 
+test("MOCK_PROVIDERS accepts 1/0", () => {
+	assert.equal(EnvSchema.parse({ ...base, MOCK_PROVIDERS: "1" }).MOCK_PROVIDERS, true);
+	assert.equal(EnvSchema.parse({ ...base, MOCK_PROVIDERS: "0" }).MOCK_PROVIDERS, false);
+	assert.equal(EnvSchema.parse(base).MOCK_PROVIDERS, false);
+});
+
 test("SESSION_SECRET shorter than 32 chars is rejected", () => {
 	assert.equal(EnvSchema.safeParse({ ...base, SESSION_SECRET: "short" }).success, false);
 });

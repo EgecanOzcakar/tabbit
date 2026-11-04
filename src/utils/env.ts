@@ -9,9 +9,14 @@ export const EnvSchema = z.object({
 	APP_URL: z.url().optional(),
 	SESSION_SECRET: z.string().min(32),
 	REDIS_URL: z.url().optional(),
-	SPOTIFY_CLIENT_ID: z.string().min(1),
-	SPOTIFY_CLIENT_SECRET: z.string().min(1),
-	SPOTIFY_REDIRECT_URI: z.url(),
+	// Force every provider onto fixture data, even when credentials are set.
+	MOCK_PROVIDERS: z.stringbool().default(false),
+	SPOTIFY_CLIENT_ID: z.string().min(1).optional(),
+	SPOTIFY_CLIENT_SECRET: z.string().min(1).optional(),
+	SPOTIFY_REDIRECT_URI: z.url().optional(),
+	DEEZER_APP_ID: z.string().min(1).optional(),
+	DEEZER_SECRET: z.string().min(1).optional(),
+	DEEZER_REDIRECT_URI: z.url().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
@@ -22,3 +27,15 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+const pair = (id?: string, secret?: string) => (!env.MOCK_PROVIDERS && id && secret ? { id, secret } : null);
+
+/** Real credentials per provider; null means that provider runs on fixture data. */
+export const creds = {
+	spotify: pair(env.SPOTIFY_CLIENT_ID, env.SPOTIFY_CLIENT_SECRET),
+	deezer: pair(env.DEEZER_APP_ID, env.DEEZER_SECRET),
+};
+
+export const redirectUri = (provider: keyof typeof creds) =>
+	(provider === "spotify" ? env.SPOTIFY_REDIRECT_URI : env.DEEZER_REDIRECT_URI) ??
+	new URL(`/auth/${provider}/callback`, env.BASE_URL).href;

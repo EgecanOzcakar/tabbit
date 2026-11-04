@@ -7,10 +7,10 @@ Object.assign(process.env, {
 	SPOTIFY_CLIENT_ID: "id",
 	SPOTIFY_CLIENT_SECRET: "secret",
 	SPOTIFY_REDIRECT_URI: "http://localhost:3000/auth/spotify/callback",
+	MOCK_PROVIDERS: "0",
 });
-const { isValidState, newOAuthState, refreshSpotifyToken, ensureAccessToken, SpotifyError } = await import(
-	"../src/utils/auth.ts"
-);
+const { isValidState, newOAuthState, ProviderError } = await import("../src/utils/auth.ts");
+const { refreshSpotifyToken, ensureAccessToken } = await import("../src/providers/spotify.ts");
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -52,9 +52,9 @@ test("refresh keeps the old refresh_token when none is returned", async () => {
 
 test("refresh maps invalid_grant to a re-auth 401 and 429 keeps Retry-After", async () => {
 	mockFetch({ error: "invalid_grant" }, 400);
-	await assert.rejects(refreshSpotifyToken("r1"), (e) => e instanceof SpotifyError && e.status === 401 && e.reauth);
+	await assert.rejects(refreshSpotifyToken("r1"), (e) => e instanceof ProviderError && e.status === 401 && e.reauth);
 	mockFetch({}, 429, { "Retry-After": "7" });
-	await assert.rejects(refreshSpotifyToken("r1"), (e) => e instanceof SpotifyError && e.status === 429 && e.retryAfter === "7");
+	await assert.rejects(refreshSpotifyToken("r1"), (e) => e instanceof ProviderError && e.status === 429 && e.retryAfter === "7");
 });
 
 test("concurrent requests on one session share a single refresh", async () => {
