@@ -1,67 +1,51 @@
 import express from "express";
-import fetch from "node-fetch";
-import { env } from "../utils/env";
-import type { SpotifyTokens } from "../types";
+import { env, creds } from "../utils/env.js";
+import { isValidState, newOAuthState } from "../utils/auth.js";
+import * as spotify from "../providers/spotify.js";
+import * as deezer from "../providers/deezer.js";
 
 const router = express.Router();
 
-router.get("/spotify/login", (_req, res) => {
-	const params = new URLSearchParams({
-		client_id: env.SPOTIFY_CLIENT_ID,
-		response_type: "code",
-		redirect_uri: env.SPOTIFY_REDIRECT_URI,
-		scope: [
-			"user-read-recently-played",
-			"playlist-read-private",
-			"playlist-read-collaborative",
-		].join(" "),
-	});
-	res.redirect(`https://accounts.spotify.com/authorize?${params.toString()}`);
-});
-
-router.get("/spotify/callback", async (req, res, next) => {
-	try {
-		const code = req.query.code as string | undefined;
-		if (!code) return res.status(400).send("Missing code");
-
-		const body = new URLSearchParams();
-		body.set("grant_type", "authorization_code");
-		body.set("code", code);
-		body.set("redirect_uri", env.SPOTIFY_REDIRECT_URI);
-		body.set("client_id", env.SPOTIFY_CLIENT_ID);
-		body.set("client_secret", env.SPOTIFY_CLIENT_SECRET);
-
-		const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body,
-		});
-		if (!tokenRes.ok) {
-			return res.status(502).send("Failed to exchange code");
+for (const [name, p] of Object.entries({ spotify, deezer }) as [
+	"spotify" | "deezer",
+	Pick<typeof spotify, "authorizeUrl" | "connect" | "connectMock">,
+][]) {
+	router.get(`/${name}/login`, (req, res) => {
+		if (!creds[name]) {
+			// Mock mode: no real provider, just mark the session connected.
+			p.connectMock(req);
+			return res.redirect(env.APP_URL ?? "/");
 		}
-		const tokenJson = (await tokenRes.json()) as {
-			access_token: string;
-			refresh_token: string;
-			expires_in: number;
-		};
+		const state = newOAuthState();
+		req.session.oauthState = state;
+		res.redirect(p.authorizeUrl(state));
+	});
 
-		const tokens: SpotifyTokens = {
-			accessToken: tokenJson.access_token,
-			refreshToken: tokenJson.refresh_token,
-			expiresAt: Date.now() + tokenJson.expires_in * 1000 - 30_000,
-		};
-		req.session.spotify = tokens;
-		res.redirect("/");
-	} catch (err) {
-		next(err);
-	}
-});
+	router.get(`/${name}/callback`, async (req, res) => {
+		const { code, state } = req.query;
+		const error = req.query.error ?? req.query.error_reason; // Spotify: error, Deezer: error_reason
+		const expected = req.session.oauthState;
+		delete req.session.oauthState; // single use
 
-router.post("/logout", (req, res) => {
-	req.session.spotify = undefined;
-	res.status(204).end();
+		if (!isValidState(expected, state)) {
+			return res.status(400).json({ error: `Invalid or missing OAuth state. Start again at /auth/${name}/login.` });
+		}
+		if (typeof error === "string") {
+			const denied = error === "access_denied" || error === "user_denied";
+			return res.status(denied ? 403 : 400).json({ error: `${name} authorization was not granted`, reason: error });
+		}
+		if (typeof code !== "string") return res.status(400).json({ error: "Missing code" });
+
+		await p.connect(req, code);
+		res.redirect(env.APP_URL ?? "/");
+	});
+}
+
+router.post("/logout", (req, res, next) => {
+	req.session.destroy((err) => {
+		if (err) return next(err);
+		res.clearCookie("sid").status(204).end();
+	});
 });
 
 export default router;
-
-

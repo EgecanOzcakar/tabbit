@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>tabbit</title>
+	<style>
+		body { font: 16px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; color: #222; background: #fff; }
+		@media (prefers-color-scheme: dark) { body { color: #eee; background: #161616; } a { color: #8ab4f8; } }
+		.row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+		.btn { padding: .5rem .9rem; border: 1px solid currentColor; border-radius: .4rem; text-decoration: none; color: inherit; background: none; font: inherit; cursor: pointer; }
+		li { margin: .5rem 0; }
+		.muted { opacity: .7; font-size: .9em; }
+	</style>
+</head>
+<body>
+	<h1>tabbit</h1>
+	<p class="muted">Tabs and sheet music for the songs you already love. Links go to licensed sites.</p>
+
+	<div class="row" id="connect">
+		<a class="btn" id="spotify" href="/auth/spotify/login">Connect Spotify</a>
+		<a class="btn" id="deezer" href="/auth/deezer/login">Connect Deezer</a>
+		<button class="btn" id="logout" hidden>Log out</button>
+	</div>
+
+	<p id="profile" class="muted"></p>
+
+	<form class="row" id="form">
+		<label for="instrument">Instrument</label>
+		<select id="instrument">
+			<option>guitar</option><option>bass</option><option>ukulele</option>
+			<option>piano</option><option>drums</option><option>vocals</option>
+		</select>
+		<button class="btn" type="submit">Get recommendations</button>
+	</form>
+
+	<p id="status" role="status"></p>
+	<ol id="results"></ol>
+
+	<script src="app.js"></script>
+</body>
+</html>
