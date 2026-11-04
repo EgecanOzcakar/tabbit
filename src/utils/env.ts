@@ -1,29 +1,24 @@
-import dotenv from "dotenv";
+import "dotenv/config";
 import { z } from "zod";
 
-dotenv.config();
-
-const EnvSchema = z.object({
-	PORT: z
-		.string()
-		.transform((v) => (v ? Number(v) : 3000))
-		.pipe(z.number().int().positive())
-		.default("3000" as unknown as number),
-	BASE_URL: z.string().url().default("http://localhost:3000"),
-	SESSION_SECRET: z.string().min(8),
+export const EnvSchema = z.object({
+	NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+	PORT: z.coerce.number().int().positive().default(3000),
+	BASE_URL: z.url().default("http://localhost:3000"),
+	// Where to send the browser after login; defaults to this server's `/`.
+	APP_URL: z.url().optional(),
+	SESSION_SECRET: z.string().min(32),
+	REDIS_URL: z.url().optional(),
 	SPOTIFY_CLIENT_ID: z.string().min(1),
 	SPOTIFY_CLIENT_SECRET: z.string().min(1),
-	SPOTIFY_REDIRECT_URI: z.string().url(),
+	SPOTIFY_REDIRECT_URI: z.url(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
 
 if (!parsed.success) {
-	// eslint-disable-next-line no-console
-	console.error("Invalid environment variables:", parsed.error.flatten().fieldErrors);
+	console.error("Invalid environment variables:", z.flattenError(parsed.error).fieldErrors);
 	process.exit(1);
 }
 
 export const env = parsed.data;
-
-

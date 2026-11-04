@@ -4,14 +4,9 @@ export type SpotifyTokens = {
 	expiresAt: number; // epoch ms
 };
 
-declare global {
-	namespace Express {
-		interface SessionData {
-			spotify?: SpotifyTokens;
-		}
+declare module "express-session" {
+	interface SessionData {
+		spotify: SpotifyTokens;
+		oauthState: string;
 	}
 }
-
-export {};
-
-
